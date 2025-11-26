@@ -4,7 +4,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const textModel = "gemini-2.5-flash";
 const imageModel = "imagen-4.0-generate-001";
-const imageEditModel = "gemini-2.5-flash-image-preview";
+const imageEditModel = "gemini-2.5-flash-image";
 
 export interface YouTubeContentResult {
   text: string;
@@ -28,7 +28,7 @@ const generateContentWithSearch = async (prompt: string, useSearch: boolean): Pr
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? null;
     
     return {
-      text: response.text,
+      text: response.text || "",
       sources,
       usage: response.usageMetadata ?? null,
     };
@@ -45,7 +45,7 @@ const generateSimpleContent = async (prompt: string): Promise<InstagramContentRe
       contents: prompt,
     });
     return {
-        text: response.text,
+        text: response.text || "",
         usage: response.usageMetadata ?? null,
     };
   } catch (error) {
@@ -188,9 +188,11 @@ export const editThumbnailImage = async (prompt: string, image: {data: string, m
         });
 
         // The response contains multiple parts, we need to find the image part
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
-                return { imageData: part.inlineData.data, usage: response.usageMetadata ?? null };
+        if (response.candidates && response.candidates[0].content.parts) {
+             for (const part of response.candidates[0].content.parts) {
+                if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+                    return { imageData: part.inlineData.data, usage: response.usageMetadata ?? null };
+                }
             }
         }
 
