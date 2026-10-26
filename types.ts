@@ -1,13 +1,12 @@
 import type { GroundingChunk, UsageMetadata } from '@google/genai';
 
-export interface HistoryItem {
+export interface YouTubeContentResult {
   text: string;
-  timestamp: number;
+  sources: GroundingChunk[] | null;
   usage: UsageMetadata | null;
 }
 
-export interface YouTubeHistoryItem extends HistoryItem {
-  sources: GroundingChunk[] | null;
+export interface InstagramContentResult {
+  text: string;
+  usage: UsageMetadata | null;
 }
-
-export interface InstagramHistoryItem extends HistoryItem {}
