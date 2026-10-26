@@ -138,7 +138,7 @@ const YouTubeAssistant: React.FC<YouTubeAssistantProps> = ({ onGenerate, isLoadi
           <label className="block text-sm font-semibold mb-2 text-gray-300">
             Content Format
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
               { id: 'video', label: '🎥 Standard Video', desc: 'Long-form (16:9)' },
               { id: 'shorts', label: '⚡ YouTube Shorts', desc: 'Vertical (<60s)' },
@@ -147,14 +147,14 @@ const YouTubeAssistant: React.FC<YouTubeAssistantProps> = ({ onGenerate, isLoadi
                 key={item.id}
                 type="button"
                 onClick={() => setFormat(item.id as any)}
-                className={`p-3 rounded-lg border text-left transition-all ${
+                className={`p-2.5 sm:p-3 rounded-lg border text-left transition-all ${
                   format === item.id
                     ? 'border-red-500 bg-red-500/10 text-red-300 shadow-sm'
                     : 'border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600'
                 }`}
               >
-                <div className="font-bold text-sm text-gray-200">{item.label}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">{item.desc}</div>
+                <div className="font-bold text-xs sm:text-sm text-gray-200">{item.label}</div>
+                <div className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5">{item.desc}</div>
               </button>
             ))}
           </div>

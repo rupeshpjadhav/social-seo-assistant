@@ -277,8 +277,8 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ text, loading, error, sou
   return (
     <div className="space-y-6">
       {/* Top Header & Actions Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-900/90 border border-gray-700/80 p-4 rounded-xl">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-900/90 border border-gray-700/80 p-3 sm:p-4 rounded-xl">
+        <div className="flex items-center justify-between sm:justify-start gap-2">
           <span className={`px-2.5 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${
             platform === 'instagram'
               ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40'
@@ -286,38 +286,38 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ text, loading, error, sou
           }`}>
             {platform === 'instagram' ? 'Instagram Viral Pack' : 'YouTube SEO Pack'}
           </span>
-          <span className="text-xs text-gray-400 hidden sm:inline">
-            ⚡ Clean Copy Ready (Headings & Chat Intros Excluded)
+          <span className="text-xs text-gray-400 hidden md:inline">
+            ⚡ Clean Copy Ready (Headings Excluded)
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-800 p-1 rounded-lg border border-gray-700 flex text-xs">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="bg-gray-800 p-1 rounded-lg border border-gray-700 flex text-xs flex-1 sm:flex-initial">
             <button
               onClick={() => setViewMode('cards')}
-              className={`px-3 py-1 rounded font-medium transition-colors ${
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded font-medium transition-colors text-center ${
                 viewMode === 'cards' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-200'
               }`}
             >
-              Formatted Cards
+              Cards
             </button>
             <button
               onClick={() => setViewMode('raw')}
-              className={`px-3 py-1 rounded font-medium transition-colors ${
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded font-medium transition-colors text-center ${
                 viewMode === 'raw' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-200'
               }`}
             >
-              Raw Text (Clean)
+              Raw Text
             </button>
           </div>
 
           <button
             onClick={handleCopyAll}
-            className="bg-teal-600 hover:bg-teal-500 text-white font-semibold py-1.5 px-3.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 text-xs shadow-sm active:scale-95"
+            className="bg-teal-600 hover:bg-teal-500 text-white font-semibold py-1.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 text-xs shadow-sm active:scale-95 flex-1 sm:flex-initial whitespace-nowrap"
             title="Copies all clean content without headings, chatter, or strategy notes"
           >
             <CopyIcon className="w-3.5 h-3.5" />
-            {isCopiedAll ? 'Copied Full Pack!' : 'Copy Full Pack (Clean)'}
+            <span>{isCopiedAll ? 'Copied Full!' : 'Copy Full Pack'}</span>
           </button>
         </div>
       </div>
@@ -329,7 +329,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ text, loading, error, sou
             {contentSections.map((section, idx) => (
               <div 
                 key={idx}
-                className={`bg-gray-900 border rounded-xl p-5 transition-all ${
+                className={`bg-gray-900 border rounded-xl p-4 sm:p-5 transition-all overflow-hidden ${
                   section.isHashtags
                     ? 'border-pink-500/40 bg-gradient-to-br from-gray-900 via-pink-950/10 to-gray-900'
                     : section.isCaption
@@ -337,28 +337,28 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ text, loading, error, sou
                     : 'border-gray-700/80'
                 }`}
               >
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-800">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-gray-200 tracking-tight">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-gray-800">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <h3 className="text-sm sm:text-base font-bold text-gray-200 tracking-tight">
                       {section.title}
                     </h3>
                     {section.isCaption && (
-                      <span className="text-[11px] bg-teal-500/20 text-teal-300 font-semibold px-2 py-0.5 rounded-full border border-teal-500/30">
+                      <span className="text-[10px] sm:text-[11px] bg-teal-500/20 text-teal-300 font-semibold px-2 py-0.5 rounded-full border border-teal-500/30">
                         Copy-Paste Ready
                       </span>
                     )}
                     {section.isHashtags && (
-                      <span className="text-[11px] bg-pink-500/20 text-pink-300 font-semibold px-2 py-0.5 rounded-full border border-pink-500/30">
+                      <span className="text-[10px] sm:text-[11px] bg-pink-500/20 text-pink-300 font-semibold px-2 py-0.5 rounded-full border border-pink-500/30">
                         Strict 5 Tags
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => handleCopySection(section.content, idx, section.isCaption)}
-                    className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium py-1 px-2.5 rounded-md transition-colors flex items-center gap-1.5 text-xs border border-gray-700 hover:border-gray-600"
+                    className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium py-1 px-2.5 rounded-md transition-colors flex items-center gap-1.5 text-xs border border-gray-700 hover:border-gray-600 shrink-0"
                   >
                     <CopyIcon className="w-3 h-3" />
-                    {copiedSectionIndex === idx ? 'Copied!' : `Copy ${section.title.split(' ')[0]}`}
+                    <span>{copiedSectionIndex === idx ? 'Copied!' : `Copy`}</span>
                   </button>
                 </div>
 
@@ -446,16 +446,16 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ text, loading, error, sou
         </div>
       ) : (
         /* Raw Text View (Guaranteed 100% clean of headings, chat intros, and strategy notes) */
-        <div className="relative bg-gray-900 border border-gray-700 rounded-xl p-6">
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-800 text-xs text-gray-400">
+        <div className="relative bg-gray-900 border border-gray-700 rounded-xl p-4 sm:p-6 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3 mb-4 border-b border-gray-800 text-xs text-gray-400">
             <span className="flex items-center gap-1.5 text-teal-400 font-semibold">
               <span>✓</span> Raw Clean Output Ready for Direct Copy-Paste
             </span>
-            <span className="text-[11px] text-gray-500">
+            <span className="text-[10px] sm:text-[11px] text-gray-500">
               No headings • No chat intros • No strategy clutter
             </span>
           </div>
-          <pre className="whitespace-pre-wrap break-words font-mono text-gray-200 text-sm leading-relaxed selection:bg-teal-500 selection:text-black">
+          <pre className="whitespace-pre-wrap break-words font-mono text-gray-200 text-xs sm:text-sm leading-relaxed selection:bg-teal-500 selection:text-black overflow-x-auto max-w-full">
             {cleanRawText}
           </pre>
         </div>

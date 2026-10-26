@@ -102,7 +102,7 @@ const InstagramAssistant: React.FC<InstagramAssistantProps> = ({ onGenerate, isL
           <label className="block text-sm font-semibold mb-2 text-gray-300">
             Instagram Format
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
               { id: 'reel', label: '🎬 Reel', desc: 'Short vertical video' },
               { id: 'carousel', label: '📑 Carousel', desc: 'Multi-slide value' },
@@ -112,14 +112,14 @@ const InstagramAssistant: React.FC<InstagramAssistantProps> = ({ onGenerate, isL
                 key={item.id}
                 type="button"
                 onClick={() => setFormat(item.id as any)}
-                className={`p-3 rounded-lg border text-left transition-all ${
+                className={`p-2.5 sm:p-3 rounded-lg border text-left transition-all ${
                   format === item.id
                     ? 'border-pink-500 bg-pink-500/10 text-pink-300 shadow-sm'
                     : 'border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600'
                 }`}
               >
-                <div className="font-bold text-sm text-gray-200">{item.label}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">{item.desc}</div>
+                <div className="font-bold text-xs sm:text-sm text-gray-200">{item.label}</div>
+                <div className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5">{item.desc}</div>
               </button>
             ))}
           </div>
