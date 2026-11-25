@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI, Modality, ThinkingLevel } from "@google/genai";
 
 const app = express();
 const PORT = 3000;
@@ -9,10 +9,11 @@ const PORT = 3000;
 // Enable JSON parsing with a large size limit to support base64 image editing uploads
 app.use(express.json({ limit: "50mb" }));
 
-// Initialize GoogleGenAI
+// Initialize GoogleGenAI with v1beta so thinkingConfig and all active Gemini models are supported
 const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
 const ai = new GoogleGenAI({
   apiKey: apiKey,
+  apiVersion: "v1beta",
   httpOptions: {
     headers: {
       'User-Agent': 'aistudio-build',
@@ -20,10 +21,19 @@ const ai = new GoogleGenAI({
   }
 });
 
-// Valid fast models for text generation with immediate fallback
-const textModels = ["gemini-3.8-flash", "gemini-flash-latest"];
+// Supported fast text models with automatic failover
+const textModels = [
+  "gemini-4-hydrogen",
+  "gemini-2.5-flash",
+  "gemini-3-flash-preview",
+  "gemini-3.1-flash-lite",
+];
 const imageModel = "imagen-4.0-generate-001";
 const imageEditModel = "gemini-2.5-flash-image";
+
+// Track models temporarily experiencing high demand so subsequent requests skip them immediately
+const COOLDOWN_MS = 3 * 60 * 1000;
+const modelCooldownUntil = new Map<string, number>();
 
 function formatErrorMessage(error: any): string {
   if (!error) return "An unexpected error occurred.";
@@ -52,29 +62,166 @@ function cleanGeneratedResponse(text: string): string {
     .trim();
 }
 
+function isTransientError(err: any, errMsg: string): boolean {
+  const status = err?.status || err?.code;
+  const lower = errMsg.toLowerCase();
+  return (
+    status === 503 ||
+    status === 429 ||
+    status === 500 ||
+    status === 504 ||
+    err?.name === 'AbortError' ||
+    err?.name === 'TimeoutError' ||
+    errMsg.includes('503') ||
+    errMsg.includes('429') ||
+    errMsg.includes('UNAVAILABLE') ||
+    errMsg.includes('RESOURCE_EXHAUSTED') ||
+    lower.includes('high demand') ||
+    lower.includes('overloaded') ||
+    lower.includes('temporarily') ||
+    lower.includes('timed out') ||
+    lower.includes('aborted')
+  );
+}
+
+function getOrderedModels(): string[] {
+  const now = Date.now();
+  const healthy: string[] = [];
+  const cooling: string[] = [];
+
+  for (const model of textModels) {
+    const until = modelCooldownUntil.get(model) ?? 0;
+    if (until > now) {
+      cooling.push(model);
+    } else {
+      healthy.push(model);
+    }
+  }
+
+  return [...healthy, ...cooling];
+}
+
+function buildModelConfig(model: string, useSearch: boolean, abortSignal: AbortSignal): Record<string, any> {
+  const config: Record<string, any> = { abortSignal };
+  if (useSearch) {
+    config.tools = [{ googleSearch: {} }];
+  }
+  if (model === "gemini-4-hydrogen" || model === "gemini-3-flash-preview") {
+    config.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+  } else if (model === "gemini-2.5-flash") {
+    config.thinkingConfig = { thinkingBudget: 0 };
+  }
+  return config;
+}
+
 async function generateTextWithFallback(params: {
   contents: string;
   useSearch?: boolean;
 }) {
-  let lastError: any = null;
+  const orderedModels = getOrderedModels();
+  const hedgeDelayMs = params.useSearch ? 4500 : 3500;
+  const perAttemptTimeoutMs = 25000;
 
-  for (const model of textModels) {
-    try {
-      const response = await ai.models.generateContent({
+  return new Promise<any>((resolve, reject) => {
+    let settled = false;
+    let nextIndex = 0;
+    let inFlight = 0;
+    let lastError: any = null;
+    const activeEntries: Array<{ model: string; controller: AbortController }> = [];
+    let hedgeTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const cleanup = () => {
+      if (hedgeTimer) {
+        clearTimeout(hedgeTimer);
+        hedgeTimer = null;
+      }
+      for (const entry of activeEntries) {
+        if (!entry.controller.signal.aborted) {
+          entry.controller.abort();
+        }
+      }
+    };
+
+    const launchNext = () => {
+      if (settled || nextIndex >= orderedModels.length) {
+        if (!settled && inFlight === 0) {
+          settled = true;
+          cleanup();
+          reject(lastError || new Error("All AI models failed to respond."));
+        }
+        return;
+      }
+
+      const model = orderedModels[nextIndex++];
+      const controller = new AbortController();
+      activeEntries.push({ model, controller });
+      inFlight++;
+
+      const timeoutHandle = setTimeout(() => {
+        if (!controller.signal.aborted) {
+          controller.abort();
+        }
+      }, perAttemptTimeoutMs);
+
+      // Schedule a hedged backup model if this model is slow to respond
+      if (hedgeTimer) clearTimeout(hedgeTimer);
+      if (nextIndex < orderedModels.length) {
+        hedgeTimer = setTimeout(() => {
+          if (!settled) {
+            launchNext();
+          }
+        }, hedgeDelayMs);
+      }
+
+      ai.models.generateContent({
         model,
         contents: params.contents,
-        ...(params.useSearch && { config: { tools: [{ googleSearch: {} }] } }),
-      });
-      return response;
-    } catch (err: any) {
-      lastError = err;
-      const errMsg = formatErrorMessage(err);
-      console.warn(`Model ${model} encountered issue: "${errMsg}". Switching to fallback model...`);
-      continue;
-    }
-  }
+        config: buildModelConfig(model, !!params.useSearch, controller.signal),
+      }).then((response) => {
+        clearTimeout(timeoutHandle);
+        inFlight--;
+        if (!settled) {
+          settled = true;
+          modelCooldownUntil.delete(model);
+          // Briefly deprioritize any slower models that were still hanging when this backup won
+          const softCooldown = Date.now() + 60 * 1000;
+          for (const entry of activeEntries) {
+            if (entry.model !== model && !entry.controller.signal.aborted) {
+              const existing = modelCooldownUntil.get(entry.model) ?? 0;
+              if (existing < softCooldown) {
+                modelCooldownUntil.set(entry.model, softCooldown);
+              }
+            }
+          }
+          cleanup();
+          resolve(response);
+        }
+      }).catch((err: any) => {
+        clearTimeout(timeoutHandle);
+        inFlight--;
+        if (settled) return;
 
-  throw lastError;
+        lastError = err;
+        const errMsg = formatErrorMessage(err);
+        console.warn(`Model ${model} failed: "${errMsg}".`);
+
+        if (isTransientError(err, errMsg)) {
+          modelCooldownUntil.set(model, Date.now() + COOLDOWN_MS);
+        }
+
+        // Immediately launch the next fallback without waiting for hedge timer
+        if (nextIndex < orderedModels.length) {
+          launchNext();
+        } else if (inFlight === 0) {
+          settled = true;
+          cleanup();
+          reject(lastError);
+        }
+      });
+    };
+
+    launchNext();
+  });
 }
 
 // API endpoints

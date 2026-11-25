@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import CopyIcon from './CopyIcon';
-import type { GroundingChunk } from '@google/genai';
+import type { GroundingChunk } from '../types';
 
 interface OutputDisplayProps {
   text: string;

@@ -1,4 +1,15 @@
-import type { GroundingChunk, UsageMetadata } from '@google/genai';
+export interface GroundingChunk {
+  web?: {
+    uri?: string;
+    title?: string;
+  };
+}
+
+export interface UsageMetadata {
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  totalTokenCount?: number;
+}
 
 export interface YouTubeContentResult {
   text: string;

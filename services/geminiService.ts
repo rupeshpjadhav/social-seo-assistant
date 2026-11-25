@@ -1,7 +1,6 @@
-import { GroundingChunk, UsageMetadata } from "@google/genai";
-import { YouTubeContentResult, InstagramContentResult } from "../types";
+import { GroundingChunk, UsageMetadata, YouTubeContentResult, InstagramContentResult } from "../types";
 
-export type { YouTubeContentResult, InstagramContentResult };
+export type { GroundingChunk, UsageMetadata, YouTubeContentResult, InstagramContentResult };
 
 export interface YouTubeRequestParams {
   description?: string;
