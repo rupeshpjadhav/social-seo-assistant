@@ -15,6 +15,14 @@ export interface InstagramRequestParams {
   tone?: string;
 }
 
+async function parseErrorResponse(response: Response, fallback: string): Promise<string> {
+  const data = await response.json().catch(() => null);
+  if (data && typeof data.error === "string" && data.error.trim()) {
+    return data.error;
+  }
+  return `${fallback} (HTTP ${response.status})`;
+}
+
 export const generateYouTubeContent = async (params: YouTubeRequestParams): Promise<YouTubeContentResult> => {
   const response = await fetch("/api/youtube", {
     method: "POST",
@@ -25,8 +33,7 @@ export const generateYouTubeContent = async (params: YouTubeRequestParams): Prom
   });
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Failed to generate YouTube content from backend.");
+    throw new Error(await parseErrorResponse(response, "Failed to generate YouTube content from backend."));
   }
 
   return response.json();
@@ -43,8 +50,7 @@ export const generateInstagramContentFromText = async (params: InstagramRequestP
   });
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Failed to generate Instagram content.");
+    throw new Error(await parseErrorResponse(response, "Failed to generate Instagram content."));
   }
 
   return response.json();
@@ -60,8 +66,7 @@ export const generateVideoIdeas = async (niche: string): Promise<InstagramConten
   });
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Failed to generate video ideas.");
+    throw new Error(await parseErrorResponse(response, "Failed to generate video ideas."));
   }
 
   return response.json();
@@ -77,8 +82,7 @@ export const generateThumbnailImage = async (prompt: string): Promise<{ imageByt
   });
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Failed to generate thumbnail.");
+    throw new Error(await parseErrorResponse(response, "Failed to generate thumbnail."));
   }
 
   return response.json();
@@ -94,8 +98,7 @@ export const generateReelCoverImage = async (prompt: string): Promise<{ imageByt
   });
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Failed to generate Reel cover.");
+    throw new Error(await parseErrorResponse(response, "Failed to generate Reel cover."));
   }
 
   return response.json();
@@ -111,8 +114,7 @@ export const editThumbnailImage = async (prompt: string, image: { data: string, 
   });
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Failed to edit thumbnail image.");
+    throw new Error(await parseErrorResponse(response, "Failed to edit thumbnail image."));
   }
 
   return response.json();
